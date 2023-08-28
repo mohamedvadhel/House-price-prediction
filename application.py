@@ -8,6 +8,7 @@ from sklearn.neural_network import MLPRegressor
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+import joblib
 
 # Load data
 csv_file_path = "filtered_dataa.csv"
@@ -27,6 +28,8 @@ X_test_scaled = scaler.transform(X_test)
 # Train models
 mlp_model = MLPRegressor(hidden_layer_sizes=(100, 50), max_iter=1000, random_state=42)
 mlp_model.fit(X_train_scaled, y_train)
+joblib.dump(mlp_model, 'mlp_model.pkl')  # Save MLP model to a file
+
 dl_model = keras.Sequential([
     layers.Input(shape=(X_train_scaled.shape[1],)),
     layers.Dense(128, activation='relu'),
@@ -35,8 +38,11 @@ dl_model = keras.Sequential([
 ])
 dl_model.compile(optimizer='adam', loss='mean_absolute_error')
 dl_model.fit(X_train_scaled, y_train, epochs=50, batch_size=32, verbose=0)
+dl_model.save('dl_model.h5')  # Save Deep Learning model to a file
+
 lr_model = LinearRegression()
 lr_model.fit(X_train_scaled, y_train)
+joblib.dump(lr_model, 'lr_model.pkl')  # Save Linear Regression model to a file
 
 # Streamlit app
 st.set_page_config(
@@ -83,11 +89,11 @@ st.title('House Price Prediction')
 st.sidebar.title('Enter Feature Values')
 features = [st.sidebar.number_input(feature, value=0, step=1, key=feature) for feature in X.columns]
 
-selected_models = st.sidebar.multiselect('Select models for prediction:', ['MLP Regressor', 'Deep Learning Model', 'Linear Regression'])
+selected_models = st.sidebar.multiselect('Select models for prediction:', ['MLP Regressor', 'Linear Regression'])
 
 if st.sidebar.button('Predict', key='predict_button'):
     st.subheader('Predicted Prices:')
-    for model_name, model in [('MLP Regressor', mlp_model), ('Deep Learning Model', dl_model), ('Linear Regression', lr_model)]:
+    for model_name, model in [('MLP Regressor', mlp_model), ('Linear Regression', lr_model)]:
         if model_name in selected_models:
             X_input = scaler.transform([features])
             y_pred = model.predict(X_input)
